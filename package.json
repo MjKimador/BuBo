@@ -1,6 +1,8 @@
 {
   "dependencies": {
+    "@interledger/http-signature-utils": "^2.0.2",
     "@interledger/open-payments": "^6.13.2",
-    "express": "^4.21.1"
+    "express": "^4.21.1",
+    "uuid": "^10.0.0"
   }
 }

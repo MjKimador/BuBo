@@ -10,25 +10,23 @@ app.use(express.json());
 app.post('/api/initiate-payment', async (req, res) => {
   try {
     const { shopName, amount, externalRef, patronWallet } = req.body;
-    
     const ShopName = shopName || 'Shoes shop';
     const TransactionDescription = 'Purchase at ' + ShopName;
     const AssetCode = 'ZAR';
     const AssetScale = 2;
     const Amount = amount || '5';
-    const ExternalRef = externalRef || '#INV2022-8363828';
-    const EmporiumWallet = '5de9d772-0506-440c-bfae-b568101d70fa';
+    const ExternalRef = externalRef || 'INV';
+    const EmporiumWallet = 'https://ilp.interledger-test.dev/zar1';
     const fs = require('fs');
-    const EmporiumPrivateKey = fs.readFileSync('PaymentGateway/EmporiumPrivateKey.pem', 'utf8')
-    const ts = require('ts');
-    const EmporiumPublicKey = fs.readFileSync('PaymentGateway/EmporiumPublicKey.pem', 'utf8')    
+    const EmporiumPrivateKey = fs.readFileSync('C:/Bubo/BuBo/bubo/api/PaymentGateway/EmporiumPrivateKey.pem', 'utf8');
+    const EmporiumKeyID = "db487b0c-72da-4986-acc1-69c02a332395";
     const Description = 'Your purchase at ' + ShopName;
-    const PatronWallet = patronWallet || '4e86b1dc-aadc-4cae-8f17-f3c471b5985d';
+    const PatronWallet = 'https://ilp.interledger-test.dev/paymentpointer1';
 
     // Create an authenticated client
     const client = await createAuthenticatedClient({
       walletAddressUrl: EmporiumWallet,
-      keyId: EmporiumPublicKey,
+      keyId: EmporiumKeyID,
       privateKey: EmporiumPrivateKey
     });
 
@@ -36,8 +34,7 @@ app.post('/api/initiate-payment', async (req, res) => {
     const emporiumWallet = await client.walletAddress.get({ url: EmporiumWallet });
 
     // Get the Patron's wallet
-    const customerWalletAddress = await client.walletAddress.get({ url: PatronWallet });
-
+    const PatronWalletAddress = await client.walletAddress.get({ url: PatronWallet });
     // Create an incoming payment for the emporium
     const incomingPaymentGrant = await client.grant.request(
       { url: emporiumWallet.authServer },
@@ -46,7 +43,7 @@ app.post('/api/initiate-payment', async (req, res) => {
           access: [
             {
               type: 'incoming-payment',
-              actions: ['read-all', 'create']
+              actions: ['read-all','create']
             }
           ]
         }
@@ -71,7 +68,6 @@ app.post('/api/initiate-payment', async (req, res) => {
         }
       }
     );
-
     // Create quote for the patron
     const quoteGrant = await client.grant.request(
       { url: PatronWallet.authServer },
@@ -80,7 +76,7 @@ app.post('/api/initiate-payment', async (req, res) => {
           access: [
             {
               type: 'quote',
-              actions: ['create', 'read']
+              actions: ['create','read']
             }
           ]
         }
@@ -107,7 +103,7 @@ app.post('/api/initiate-payment', async (req, res) => {
           access: [
             {
               type: 'outgoing-payment',
-              actions: ['read', 'create', 'list'],
+              actions: ['read','create','list'],
               identifier: PatronWallet.id,
               limits: {
                 debitAmount: quote.debitAmount,
@@ -163,5 +159,3 @@ app.post('/api/initiate-payment', async (req, res) => {
 app.listen(port, () => {
   console.log(`Payment API listening at http://localhost:${port}`);
 });
-
- 
