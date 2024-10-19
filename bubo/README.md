@@ -87,7 +87,7 @@ Running in PowerShell
 If you're using PowerShell, make sure to properly format your Invoke-WebRequest calls:
 
 powershell
-Copy code
+
 Invoke-WebRequest -Uri http://localhost:3000/accounts -Method POST -Headers @{ "Content-Type" = "applicat
 
 
