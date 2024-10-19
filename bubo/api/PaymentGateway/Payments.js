@@ -1,5 +1,6 @@
 // Variables for the transaction
-var TransactionDescription = 'Purchase at Shoe Shop';
+var ShopName = 'Shoes shop';
+var TransactionDescription = 'Purchase at '+ShopName;
 var AssetCode ='ZAR';
 var AssetScale = 2;
 var Amount = '5000';
@@ -8,7 +9,6 @@ var EmporiumWallet = 'https://online-marketplace.com/usa';
 var PatronWallet = 'https://cloud-nine-wallet.com/alice';
 var EmporiumPublicKey = 'KEY_ID';
 var EmporiumPrivateKey = 'KEY_ID';
-var ShopName = 'Shoes shop'
 var Description = 'Your purchase at '+ShopName;
 
 // Import the function to create an authenticated client from the Open Payments library
