@@ -8,6 +8,8 @@ var EmporiumWallet = 'https://online-marketplace.com/usa';
 var PatronWallet = 'https://cloud-nine-wallet.com/alice';
 var EmporiumPublicKey = 'KEY_ID';
 var EmporiumPrivateKey = 'KEY_ID';
+var ShopName = 'Shoes shop'
+var Description = 'Your purchase at '+ShopName;
 
 // Import the function to create an authenticated client from the Open Payments library
 import { createAuthenticatedClient } from '@interledger/open-payments'
@@ -134,12 +136,6 @@ const outgoingPaymentGrant = await client.grant.request(
   );
    
 
-  
- // *************************************
- // NEW CODE
- // *************************************
-
-
 // Continue the grant process after the patron has approved the request
 const finalizedOutgoingPaymentGrant = await client.grant.continue(
     {
@@ -151,3 +147,24 @@ const finalizedOutgoingPaymentGrant = await client.grant.continue(
     { interact_ref: INTERACT_REF_FROM_URL } 
   );
   
+  // Create an OutgoingPayment on the patron's account after the grant interaction flow has been completed and they have given their consent to the payment
+const outgoingPayment = await client.outgoingPayment.create(
+    {
+      url: new URL(PatronWallet.id).origin,
+      accessToken: finalizedOutgoingPaymentGrant.access_token.value // This token authorizes the outgoing payment creation
+    },
+    
+    {
+      walletAddress: PatronWallet.id, // Alice's wallet address
+      quoteId: quote.id,
+      metadata: { 
+        description: Description // A brief description of the payment transaction
+      }
+    }
+  );
+  
+
+  // *************************************
+ // NEW CODE
+ // *************************************
+ 
