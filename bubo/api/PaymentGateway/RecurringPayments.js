@@ -24,7 +24,7 @@ const shoeShopWalletAddress = await client.walletAddress.get({
     url: EmporiumWallet
   })
   
- // Get the wallet of the patron 
+ // Get the wallet of the patron  
   const customerWalletAddress = await client.walletAddress.get({
     url: PatronWallet
   })
@@ -64,7 +64,7 @@ const shoeShopWalletAddress = await client.walletAddress.get({
   )
 
 
-  // Request a grant to create a quote for the patron's wallet address
+  // Request a grant to create a quote for the patron 's wallet address
 const quoteGrant = await client.grant.request(
     { url: PatronWallet.authServer },  // The authorization server URL of the customer's wallet
     {
@@ -80,7 +80,7 @@ const quoteGrant = await client.grant.request(
   )
   
   // Use the granted access token to create a payment quote
-  // The quote will tell the patron how much the payment will cost, over the Interledger Protocol (ILP)
+  // The quote will tell the patron  how much the payment will cost, over the Interledger Protocol (ILP)
   const quote = await client.quote.create(
     {
       url: new URL(PatronWallet.id).origin, 
@@ -93,3 +93,48 @@ const quoteGrant = await client.grant.request(
     }
   )
   
+
+ // *************************************
+ // NEW CODE
+ // *************************************
+
+ // Create an outgoing payment on Alice's wallet.
+const outgoingPaymentGrant = await client.grant.request(
+    // First, provide the URL of Alice's wallet's authorization server
+    { url: PatronWallet.authServer },
+    
+    {
+      // Request an access token with specific permissions (grants) for outgoing payments
+      access_token: {
+        access: [
+          {
+            type: 'outgoing-payment', 
+            actions: ['read', 'create', 'list'], 
+            identifier: PatronWallet.id, 
+  
+            // Set limits for the outgoing payment based on the quote
+            limits: {
+              debitAmount: quote.debitAmount, // The maximum amount that can be debited from patron's wallet (based on the quote)
+              receiveAmount: quote.receiveAmount // The amount the patron will receive, also derived from the quote
+            }
+          }
+        ]
+      },
+  
+      // The 'interact' block is used to facilitate interaction with the patron  to get their consent
+      interact: {
+        start: ['redirect'], 
+  
+        // After the patron gives consent, the interaction is completed and she'll be redirected
+        finish: {
+          method: 'redirect',
+  
+          // This is the URI to which the patron will be redirected after the interaction (successful payment consent)
+          uri: 'https://online-marketplace.com/complete-payment',
+  
+          nonce: uuid() // A unique nonce to track this interaction for security purposes
+        }
+      }
+    }
+  );
+   
