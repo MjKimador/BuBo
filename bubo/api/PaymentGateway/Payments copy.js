@@ -19,9 +19,9 @@ app.post('/api/initiate-payment', async (req, res) => {
     const ExternalRef = externalRef || '#INV2022-8363828';
     const EmporiumWallet = '5de9d772-0506-440c-bfae-b568101d70fa';
     const fs = require('fs');
-    const EmporiumPrivateKey = fs.readFileSync('PaymentGatewway/EmporiumPrivateKey.pem', 'utf8')
+    const EmporiumPrivateKey = fs.readFileSync('PaymentGateway/EmporiumPrivateKey.pem', 'utf8')
     const ts = require('ts');
-    const EmporiumPublicKey = fs.readFileSync('PaymentGatewway/EmporiumPublicKey.pem', 'utf8')    
+    const EmporiumPublicKey = fs.readFileSync('PaymentGateway/EmporiumPublicKey.pem', 'utf8')    
     const Description = 'Your purchase at ' + ShopName;
     const PatronWallet = patronWallet || '4e86b1dc-aadc-4cae-8f17-f3c471b5985d';
 
