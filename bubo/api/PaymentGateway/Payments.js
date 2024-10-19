@@ -162,7 +162,6 @@ const outgoingPayment = await client.outgoingPayment.create(
       }
     }
   );
-// test
 
   // *************************************
  // NEW CODE
