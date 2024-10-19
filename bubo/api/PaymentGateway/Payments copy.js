@@ -18,14 +18,15 @@ app.post('/api/initiate-payment', async (req, res) => {
     const Amount = amount || '5';
     const ExternalRef = externalRef || '#INV2022-8363828';
     const EmporiumWallet = '5de9d772-0506-440c-bfae-b568101d70fa';
-    const EmporiumPrivateKey = 'MC4CAQAwBQYDK2VwBCIEIMhtYqcuWK0fTQkIL1nYdUosyTphFEDKCPQv+7oukI4p';;
+    const EmporiumPrivateKey = 'MC4CAQAwBQYDK2VwBCIEIMhtYqcuWK0fTQkIL1nYdUosyTphFEDKCPQv+7oukI4p';
+    const EmporiumPublicKey = 'MCowBQYDK2VwAyEA9kC7h0qhK/yf3ADFtbw0UafATsmOpivC2CEh1uwV0ms=';
     const Description = 'Your purchase at ' + ShopName;
     const PatronWallet = patronWallet || '4e86b1dc-aadc-4cae-8f17-f3c471b5985d';
 
     // Create an authenticated client
     const client = await createAuthenticatedClient({
       walletAddressUrl: EmporiumWallet,
-      keyId: EmporiumPrivateKey,
+      keyId: EmporiumPublicKey,
       privateKey: EmporiumPrivateKey
     });
 
