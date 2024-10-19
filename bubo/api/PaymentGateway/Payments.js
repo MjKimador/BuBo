@@ -4,7 +4,7 @@ var TransactionDescription = 'Purchase at '+ShopName;
 var AssetCode ='ZAR';
 var AssetScale = 2;
 var Amount = '5000';
-var ExternalRef = '#INV2022-8363828';
+var ExternalRef = new Date(); 
 var EmporiumWallet = 'https://online-marketplace.com/usa';
 var PatronWallet = 'https://cloud-nine-wallet.com/alice';
 var EmporiumPublicKey = 'KEY_ID';
@@ -22,7 +22,7 @@ const client = await createAuthenticatedClient({
 })
 
 // Get the wallet of the emporium
-const shoeShopWalletAddress = await client.walletAddress.get({
+const EmporiumWallet = await client.walletAddress.get({
     url: EmporiumWallet
   })
   
