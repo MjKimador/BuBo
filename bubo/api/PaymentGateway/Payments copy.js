@@ -19,7 +19,7 @@ app.post('/api/initiate-payment', async (req, res) => {
     const EmporiumWallet = 'https://ilp.interledger-test.dev/zar1';
     const fs = require('fs');
     const EmporiumPrivateKey = fs.readFileSync('bubo/api/PaymentGateway/EmporiumPrivateKey.pem', 'utf8');
-    const EmporiumKeyID = "db487b0c-72da-4986-acc1-69c02a332395";
+    const EmporiumKeyID = "247e60e4-a5aa-4291-a5b6-2b2389662d91";
     const Description = 'Your purchase at ' + ShopName;
     const PatronWallet = 'https://ilp.interledger-test.dev/paymentpointer1';
 
