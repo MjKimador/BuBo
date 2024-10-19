@@ -93,11 +93,6 @@ const quoteGrant = await client.grant.request(
     }
   )
   
-
- // *************************************
- // NEW CODE
- // *************************************
-
  // Create an outgoing payment on Alice's wallet.
 const outgoingPaymentGrant = await client.grant.request(
     // First, provide the URL of Alice's wallet's authorization server
@@ -130,7 +125,7 @@ const outgoingPaymentGrant = await client.grant.request(
           method: 'redirect',
   
           // This is the URI to which the patron will be redirected after the interaction (successful payment consent)
-          uri: 'https://online-marketplace.com/complete-payment',
+          uri: EmporiumWallet,
   
           nonce: uuid() // A unique nonce to track this interaction for security purposes
         }
@@ -138,3 +133,21 @@ const outgoingPaymentGrant = await client.grant.request(
     }
   );
    
+
+  
+ // *************************************
+ // NEW CODE
+ // *************************************
+
+
+// Continue the grant process after the patron has approved the request
+const finalizedOutgoingPaymentGrant = await client.grant.continue(
+    {
+      accessToken: outgoingPaymentGrant.access_token.value, 
+  
+      url: outgoingPaymentGrant.continue.uri 
+    },
+    
+    { interact_ref: INTERACT_REF_FROM_URL } 
+  );
+  
