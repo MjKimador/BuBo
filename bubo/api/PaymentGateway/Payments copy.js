@@ -15,12 +15,12 @@ app.post('/api/initiate-payment', async (req, res) => {
     const TransactionDescription = 'Purchase at ' + ShopName;
     const AssetCode = 'ZAR';
     const AssetScale = 2;
-    const Amount = amount || '5000';
+    const Amount = amount || '5';
     const ExternalRef = externalRef || '#INV2022-8363828';
-    const EmporiumWallet = 'https://online-marketplace.com/usa';
-    const EmporiumPrivateKey = 'KEY_ID';
+    const EmporiumWallet = '5de9d772-0506-440c-bfae-b568101d70fa';
+    const EmporiumPrivateKey = 'MC4CAQAwBQYDK2VwBCIEIMhtYqcuWK0fTQkIL1nYdUosyTphFEDKCPQv+7oukI4p';;
     const Description = 'Your purchase at ' + ShopName;
-    const PatronWallet = patronWallet || 'https://cloud-nine-wallet.com/alice';
+    const PatronWallet = patronWallet || '4e86b1dc-aadc-4cae-8f17-f3c471b5985d';
 
     // Create an authenticated client
     const client = await createAuthenticatedClient({

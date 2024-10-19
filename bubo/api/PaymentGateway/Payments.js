@@ -3,12 +3,12 @@ var ShopName = 'Shoes shop';
 var TransactionDescription = 'Purchase at '+ShopName;
 var AssetCode ='ZAR';
 var AssetScale = 2;
-var Amount = '5000';
+var Amount = '5';
 var ExternalRef = new Date(); 
-var EmporiumWallet = 'https://online-marketplace.com/usa';
-var PatronWallet = 'https://cloud-nine-wallet.com/alice';
-var EmporiumPublicKey = 'KEY_ID';
-var EmporiumPrivateKey = 'KEY_ID';
+var EmporiumWallet = '5de9d772-0506-440c-bfae-b568101d70fa';
+var PatronWallet = '4e86b1dc-aadc-4cae-8f17-f3c471b5985d';
+var EmporiumPublicKey = 'MCowBQYDK2VwAyEA9kC7h0qhK/yf3ADFtbw0UafATsmOpivC2CEh1uwV0ms=';
+var EmporiumPrivateKey = 'MC4CAQAwBQYDK2VwBCIEIMhtYqcuWK0fTQkIL1nYdUosyTphFEDKCPQv+7oukI4p';
 var Description = 'Your purchase at '+ShopName;
 
 // Import the function to create an authenticated client from the Open Payments library
