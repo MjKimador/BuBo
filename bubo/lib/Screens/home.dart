@@ -156,14 +156,14 @@ class _HomeScreenState extends State<HomeScreen>
   Widget build(BuildContext context) {
     super.build(context);
     return Scaffold(
-      backgroundColor: Color.fromARGB(255, 128, 67, 226),
+      backgroundColor: const Color.fromARGB(255, 61, 59, 59),
       body: Stack(
         children: [
           SingleChildScrollView(
             controller: _scrollController,
             child: Container(
               decoration: BoxDecoration(
-                color: Color.fromARGB(255, 128, 67, 226),
+                color: const Color.fromARGB(255, 61, 59, 59),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black26,
@@ -187,7 +187,7 @@ class _HomeScreenState extends State<HomeScreen>
                         borderRadius: BorderRadius.circular(30.0),
                         boxShadow: [
                           BoxShadow(
-                            color: Color.fromARGB(255, 128, 67, 226),
+                            color: const Color.fromARGB(255, 61, 59, 59),
                             blurRadius: 20.0,
                             spreadRadius: 5.0,
                             offset: Offset(5.0, 5.0),
