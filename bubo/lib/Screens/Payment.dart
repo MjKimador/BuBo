@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class PaymentScreen extends StatefulWidget {
   @override
@@ -14,41 +15,55 @@ class _PaymentScreenState extends State<PaymentScreen> {
   String _paymentStatus = 'Ready to initiate payment';
   String _redirectUrl = '';
   bool _isLoading = false;
+  bool _paymentCompleted = false;
 
   late WebSocketChannel _channel;
+
+  // HashMap to store wallet addresses
+  final Map<String, String> _walletMap = {
+    '1234': 'b40ce34e-5db6-487a-abdd-d1a93e9f9457', // sendWallet
+    '5678': '247e60e4-a5aa-4291-a5b6-2b2389662d91', // receiverWallet
+  };
 
   @override
   void initState() {
     super.initState();
-    // Establish a WebSocket connection
     _channel = WebSocketChannel.connect(
-      Uri.parse(
-          'ws://localhost:30343/'), // Make sure to use the correct address
+      Uri.parse('ws://localhost:30343/'),
     );
 
-    // Listen for messages from the server
     _channel.stream.listen((message) {
       final data = jsonDecode(message);
       if (data['redirectUrl'] != null) {
         setState(() {
           _redirectUrl = data['redirectUrl'];
           _paymentStatus =
-              'Redirect URL received. Please complete the payment.';
+              'Authorization URL received. Please complete the payment.';
         });
       } else if (data['status'] != null) {
         setState(() {
           _paymentStatus = data['status'];
+          if (data['status'] == 'Payment completed successfully') {
+            _paymentCompleted = true;
+          }
         });
       }
     });
   }
 
+  String _getWalletAddress(String key) {
+    return _walletMap[key] ?? '';
+  }
+
   Future<void> _initiatePayment() async {
-    if (_senderController.text.isEmpty ||
-        _receiverController.text.isEmpty ||
+    String senderWallet = _getWalletAddress(_senderController.text);
+    String receiverWallet = _getWalletAddress(_receiverController.text);
+
+    if (senderWallet.isEmpty ||
+        receiverWallet.isEmpty ||
         _amountController.text.isEmpty) {
       setState(() {
-        _paymentStatus = 'Please fill all fields';
+        _paymentStatus = 'Please enter valid wallet keys and amount';
       });
       return;
     }
@@ -59,14 +74,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
     });
 
     try {
-      // Send data to the server
       _channel.sink.add(jsonEncode({
-        'sendWallet': _senderController.text,
-        'receiverWallet': _receiverController.text,
+        'sendWallet': senderWallet,
+        'receiverWallet': receiverWallet,
         'amountMoney': _amountController.text,
       }));
-
-      // You might want to set a timeout or a way to confirm payment completion here
     } catch (e) {
       setState(() {
         _isLoading = false;
@@ -75,9 +87,21 @@ class _PaymentScreenState extends State<PaymentScreen> {
     }
   }
 
+  Future<void> _launchAuthorizationURL() async {
+    if (_redirectUrl.isNotEmpty) {
+      if (await canLaunch(_redirectUrl)) {
+        await launch(_redirectUrl);
+      } else {
+        setState(() {
+          _paymentStatus = 'Could not launch $_redirectUrl';
+        });
+      }
+    }
+  }
+
   @override
   void dispose() {
-    _channel.sink.close(); // Close the WebSocket channel when done
+    _channel.sink.close();
     super.dispose();
   }
 
@@ -90,92 +114,130 @@ class _PaymentScreenState extends State<PaymentScreen> {
       ),
       body: Padding(
         padding: EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            TextField(
-              controller: _senderController,
-              decoration: InputDecoration(
-                labelText: 'Sender Wallet',
-                labelStyle: TextStyle(color: Colors.cyan),
-                enabledBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(color: Colors.cyan),
-                ),
-                focusedBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(color: Colors.cyanAccent),
-                ),
-              ),
-              style: TextStyle(color: Colors.white),
-            ),
-            SizedBox(height: 16),
-            TextField(
-              controller: _receiverController,
-              decoration: InputDecoration(
-                labelText: 'Receiver Wallet',
-                labelStyle: TextStyle(color: Colors.cyan),
-                enabledBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(color: Colors.cyan),
-                ),
-                focusedBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(color: Colors.cyanAccent),
-                ),
-              ),
-              style: TextStyle(color: Colors.white),
-            ),
-            SizedBox(height: 16),
-            TextField(
-              controller: _amountController,
-              decoration: InputDecoration(
-                labelText: 'Amount',
-                labelStyle: TextStyle(color: Colors.cyan),
-                enabledBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(color: Colors.cyan),
-                ),
-                focusedBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(color: Colors.cyanAccent),
-                ),
-              ),
-              keyboardType: TextInputType.number,
-              style: TextStyle(color: Colors.white),
-            ),
-            SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: _isLoading ? null : _initiatePayment,
-              child: _isLoading
-                  ? CircularProgressIndicator(color: Colors.white)
-                  : Text('Initiate Payment', style: TextStyle(fontSize: 16)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.purpleAccent,
-                padding: EdgeInsets.symmetric(vertical: 16),
-              ),
-            ),
-            SizedBox(height: 24),
-            Text(
-              _paymentStatus,
-              style: TextStyle(
-                  color: Colors.yellowAccent,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
-            if (_redirectUrl.isNotEmpty) ...[
-              SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () {
-                  // Here you would typically launch the URL
-                  print('Opening redirect URL: $_redirectUrl');
-                },
-                child: Text('Complete Payment', style: TextStyle(fontSize: 16)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  padding: EdgeInsets.symmetric(vertical: 16),
-                ),
-              ),
-            ],
-          ],
-        ),
+        child: _paymentCompleted ? _buildThankYouWidget() : _buildPaymentForm(),
       ),
       backgroundColor: Color.fromARGB(255, 61, 59, 59),
+    );
+  }
+
+  Widget _buildPaymentForm() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        TextField(
+          controller: _senderController,
+          decoration: InputDecoration(
+            labelText: 'Sender Wallet Key (4 digits)',
+            labelStyle: TextStyle(color: Colors.cyan),
+            enabledBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: Colors.cyan),
+            ),
+            focusedBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: Colors.cyanAccent),
+            ),
+          ),
+          style: TextStyle(color: Colors.white),
+          keyboardType: TextInputType.number,
+          maxLength: 4,
+        ),
+        SizedBox(height: 16),
+        TextField(
+          controller: _receiverController,
+          decoration: InputDecoration(
+            labelText: 'Receiver Wallet Key (4 digits)',
+            labelStyle: TextStyle(color: Colors.cyan),
+            enabledBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: Colors.cyan),
+            ),
+            focusedBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: Colors.cyanAccent),
+            ),
+          ),
+          style: TextStyle(color: Colors.white),
+          keyboardType: TextInputType.number,
+          maxLength: 4,
+        ),
+        SizedBox(height: 16),
+        TextField(
+          controller: _amountController,
+          decoration: InputDecoration(
+            labelText: 'Amount',
+            labelStyle: TextStyle(color: Colors.cyan),
+            enabledBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: Colors.cyan),
+            ),
+            focusedBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: Colors.cyanAccent),
+            ),
+          ),
+          keyboardType: TextInputType.number,
+          style: TextStyle(color: Colors.white),
+        ),
+        SizedBox(height: 24),
+        ElevatedButton(
+          onPressed: _isLoading ? null : _initiatePayment,
+          child: _isLoading
+              ? CircularProgressIndicator(color: Colors.white)
+              : Text('Initiate Payment', style: TextStyle(fontSize: 16)),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.purpleAccent,
+            padding: EdgeInsets.symmetric(vertical: 16),
+          ),
+        ),
+        SizedBox(height: 24),
+        Text(
+          _paymentStatus,
+          style: TextStyle(
+              color: Colors.yellowAccent,
+              fontSize: 18,
+              fontWeight: FontWeight.bold),
+          textAlign: TextAlign.center,
+        ),
+        if (_redirectUrl.isNotEmpty) ...[
+          SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: _launchAuthorizationURL,
+            child: Text('Authorize Payment', style: TextStyle(fontSize: 16)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              padding: EdgeInsets.symmetric(vertical: 16),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildThankYouWidget() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.check_circle,
+            color: Colors.green,
+            size: 100,
+          ),
+          SizedBox(height: 24),
+          Text(
+            'Thank You!',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          SizedBox(height: 16),
+          Text(
+            'Your payment has been completed successfully.',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
     );
   }
 }

@@ -1,3 +1,4 @@
+import 'package:bubo/Screens/Payment.dart';
 import 'package:flutter/material.dart';
 
 class OfferLoanScreen extends StatefulWidget {
@@ -44,7 +45,9 @@ class _OfferLoanScreenState extends State<OfferLoanScreen> {
                 ),
               ),
               onPressed: () {
-                // Handle loan offer upload
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => PaymentScreen()),
+                );
               },
             ),
           ],
@@ -62,16 +65,15 @@ class _OfferLoanScreenState extends State<OfferLoanScreen> {
         TextFormField(
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle:
-                TextStyle(color: const Color.fromARGB(216, 252, 245, 245)),
+            hintStyle: TextStyle(color: Colors.grey),
             filled: true,
-            fillColor: Color.fromARGB(255, 243, 245, 247),
+            fillColor: Colors.white,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
               borderSide: BorderSide.none,
             ),
           ),
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: Colors.black),
         ),
       ],
     );
@@ -83,32 +85,34 @@ class _OfferLoanScreenState extends State<OfferLoanScreen> {
       children: [
         Text('Repayment Schedule', style: TextStyle(color: Colors.white70)),
         SizedBox(height: 8),
-        DropdownButtonFormField<String>(
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: const Color.fromARGB(255, 61, 59, 59),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide.none,
-            ),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
           ),
-          dropdownColor: const Color.fromARGB(255, 61, 59, 59),
-          style: TextStyle(color: Colors.white),
-          hint: Text('Select repayment schedule',
-              style: TextStyle(color: Colors.white30)),
-          value: _selectedRepaymentSchedule,
-          onChanged: (String? newValue) {
-            setState(() {
-              _selectedRepaymentSchedule = newValue;
-            });
-          },
-          items:
-              _repaymentSchedules.map<DropdownMenuItem<String>>((String value) {
-            return DropdownMenuItem<String>(
-              value: value,
-              child: Text(value),
-            );
-          }).toList(),
+          child: DropdownButtonFormField<String>(
+            decoration: InputDecoration(
+              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              border: InputBorder.none,
+            ),
+            dropdownColor: Colors.white,
+            style: TextStyle(color: Colors.black),
+            hint: Text('Select repayment schedule',
+                style: TextStyle(color: Colors.grey)),
+            value: _selectedRepaymentSchedule,
+            onChanged: (String? newValue) {
+              setState(() {
+                _selectedRepaymentSchedule = newValue;
+              });
+            },
+            items: _repaymentSchedules
+                .map<DropdownMenuItem<String>>((String value) {
+              return DropdownMenuItem<String>(
+                value: value,
+                child: Text(value),
+              );
+            }).toList(),
+          ),
         ),
       ],
     );
