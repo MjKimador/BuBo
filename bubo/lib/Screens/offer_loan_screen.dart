@@ -18,9 +18,9 @@ class _OfferLoanScreenState extends State<OfferLoanScreen> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text('Offer a Loan', style: TextStyle(color: Colors.white)),
-        backgroundColor: Color.fromARGB(255, 128, 67, 226),
+        backgroundColor: const Color.fromARGB(255, 61, 59, 59),
       ),
-      backgroundColor: Color.fromARGB(255, 128, 67, 226),
+      backgroundColor: const Color.fromARGB(255, 61, 59, 59),
       body: Padding(
         padding: EdgeInsets.all(16.0),
         child: Column(
@@ -62,9 +62,10 @@ class _OfferLoanScreenState extends State<OfferLoanScreen> {
         TextFormField(
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: TextStyle(color: Colors.white30),
+            hintStyle:
+                TextStyle(color: const Color.fromARGB(216, 252, 245, 245)),
             filled: true,
-            fillColor: Color(0xFF2A3442),
+            fillColor: Color.fromARGB(255, 243, 245, 247),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
               borderSide: BorderSide.none,
@@ -85,13 +86,13 @@ class _OfferLoanScreenState extends State<OfferLoanScreen> {
         DropdownButtonFormField<String>(
           decoration: InputDecoration(
             filled: true,
-            fillColor: Color(0xFF2A3442),
+            fillColor: const Color.fromARGB(255, 61, 59, 59),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
               borderSide: BorderSide.none,
             ),
           ),
-          dropdownColor: Color(0xFF2A3442),
+          dropdownColor: const Color.fromARGB(255, 61, 59, 59),
           style: TextStyle(color: Colors.white),
           hint: Text('Select repayment schedule',
               style: TextStyle(color: Colors.white30)),

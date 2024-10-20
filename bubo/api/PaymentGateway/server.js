@@ -1,63 +1,42 @@
 const { AuthenticatedClient, createAuthenticatedClient, isFinalizedGrant, isPendingGrant } = require('@interledger/open-payments');
-const { randomUUID } = require('crypto');
-const net = require('net');
-const { encode } = require('punycode');
+const WebSocket = require('ws');
+const http = require('http');
+
+const PORT = 30343;
 
 async function getAuthenticatedClient() {
-  const client = await createAuthenticatedClient({
-    walletAddressUrl:"https://ilp.interledger-test.dev/ptr1",
-    privateKey: Buffer.from("LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tCk1DNENBUUF3QlFZREsyVndCQ0lFSUc0S0oydFQ3MEZuNDNpTWJWMC9SMGJ4WWgzckZmcDZNZkd2UTBJa0VTRzEKLS0tLS1FTkQgUFJJVkFURSBLRVktLS0tLQ==",'base64'),
+  return await createAuthenticatedClient({
+    walletAddressUrl: "https://ilp.interledger-test.dev/ptr1",
+    privateKey: Buffer.from("LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tCk1DNENBUUF3QlFZREsyVndCQ0lFSUc0S0oydFQ3MEZuNDNpTWJWMC9SMGJ4WWgzckZmcDZNZkd2UTBJa0VTRzEKLS0tLS1FTkQgUFJJVkFURSBLRVktLS0tLQ==", 'base64'),
     keyId: 'db6e641f-6c3f-443e-bb39-2a08c856d0da',
     validateResponses: false
   });
-  return client;
 }
 
-async function getWalletAddressInfo(client, input) {
-  
-
-  // Check if input is a payment pointer
-  
-  
+async function getWalletAddressInfo(client, walletAddress) {
   try {
-
-    const walletAddressDetails = await client.walletAddress.get({
-      url: "https://ilp.interledger-test.dev/ptr1",
-    });
-
-    return walletAddressDetails;
+    return await client.walletAddress.get({ url: "https://ilp.interledger-test.dev/ptr1" });
   } catch (error) {
     console.error(`Error fetching wallet address info: ${error.message}`);
     throw error;
   }
 }
 
-
 async function createIncomingPayment(client, value, walletAddressDetails) {
-  console.log('** creating incoming payment grant req');
-  console.log(walletAddressDetails);
-
   const grant = await client.grant.request(
-    {
-      url: walletAddressDetails.authServer,
-    },
+    { url: walletAddressDetails.authServer },
     {
       access_token: {
-        access: [
-          {
-            type: 'incoming-payment',
-            actions: ["read", "create", "complete"],
-          },
-        ],
+        access: [{ type: 'incoming-payment', actions: ["read", "create", "complete"] }],
       },
     }
   );
 
   if (isPendingGrant(grant)) {
-    throw new Error('Expected non-interactive grant');
+    throw new Error('Expected non-interactive grant for incoming payment');
   }
 
-  const incomingPayment = await client.incomingPayment.create(
+  return await client.incomingPayment.create(
     {
       url: new URL(walletAddressDetails.id).origin,
       accessToken: grant.access_token.value,
@@ -71,37 +50,23 @@ async function createIncomingPayment(client, value, walletAddressDetails) {
       },
     }
   );
-
-  console.log('** inc');
-  console.log(incomingPayment);
-  return incomingPayment;
 }
 
 async function createQuote(client, incomingPaymentUrl, walletAddressDetails) {
-  console.log('** 2 req');
-  console.log(walletAddressDetails);
-
   const grant = await client.grant.request(
-    {
-      url: walletAddressDetails.authServer,
-    },
+    { url: walletAddressDetails.authServer },
     {
       access_token: {
-        access: [
-          {
-            type: 'quote',
-            actions: ['create', 'read', 'read-all'],
-          },
-        ],
+        access: [{ type: 'quote', actions: ['create', 'read', 'read-all'] }],
       },
     }
   );
 
   if (isPendingGrant(grant)) {
-    throw new Error('Expected non-interactive grant');
+    throw new Error('Expected non-interactive grant for quote');
   }
 
-  const quote = await client.quote.create(
+  return await client.quote.create(
     {
       url: walletAddressDetails.resourceServer,
       accessToken: grant.access_token.value,
@@ -112,115 +77,110 @@ async function createQuote(client, incomingPaymentUrl, walletAddressDetails) {
       receiver: incomingPaymentUrl,
     }
   );
-
-  console.log('** quote');
-  console.log(quote);
-  return quote;
 }
 
 async function getOutgoingPaymentAuthorization(client, walletAddressDetails) {
   const grant = await client.grant.request(
-    {
-      url: walletAddressDetails.authServer,
-    },
+    { url: walletAddressDetails.authServer },
     {
       access_token: {
-        access: [
-          {
-            identifier: walletAddressDetails.id,
-            type: 'outgoing-payment',
-            actions: ['list', 'list-all', 'read', 'read-all', 'create'],
-          },
-        ],
+        access: [{
+          identifier: walletAddressDetails.id,
+          type: 'outgoing-payment',
+          actions: ['list', 'list-all', 'read', 'read-all', 'create'],
+        }],
       },
-      interact: {
-        start: ['redirect'],
-      },
+      interact: { start: ['redirect'] },
     }
   );
 
   if (!isPendingGrant(grant)) {
-    throw new Error('Expected interactive grant');
+    throw new Error('Expected interactive grant for outgoing payment');
   }
 
   return grant;
 }
 
 async function createOutgoingPayment(client, walletAddressUrl, grant, quote) {
-  let grant2;
+  let finalizedGrant;
+  await new Promise((resolve) => setTimeout(resolve, 5000));
   while (true) {
-    console.log('trying to get payment.......');
-
-    grant2 = await client.grant.continue({
+    console.log('Polling for finalized grant...');
+    const currentGrant = await client.grant.continue({
       accessToken: grant.continue.access_token.value,
       url: grant.continue.uri,
     });
 
-    console.log(grant2);
-    if (isFinalizedGrant(grant2)) {
+    if (isFinalizedGrant(currentGrant)) {
+      finalizedGrant = currentGrant;
       break;
-    } else {
-      console.log('sleeping....');
-      await new Promise((r) => setTimeout(r, 2000));
     }
+    await new Promise((resolve) => setTimeout(resolve, 7000));
   }
 
-  const outgoingPayment = await client.outgoingPayment.create(
+  return await client.outgoingPayment.create(
     {
       url: walletAddressUrl.resourceServer,
-      accessToken: grant2.access_token.value,
+      accessToken: finalizedGrant.access_token.value,
     },
     {
       walletAddress: walletAddressUrl.id,
       quoteId: quote.id,
     }
   );
-
-  return outgoingPayment;
 }
 
-// Create a TCP server
-const server = net.createServer((socket) => {
-  console.log('Client connected');
+async function handlePaymentProcess(ws, data) {
+  const client = await getAuthenticatedClient();
+  const { sendWallet, receiverWallet, amountMoney } = data;
+
+  if (!sendWallet || !receiverWallet || !amountMoney) {
+    throw new Error('Invalid input format. Expected: sendWallet, receiverWallet, amountMoney');
+  }
+
+  const senderWalletsDetails = await getWalletAddressInfo(client, sendWallet);
+  const receiverWalletsDetails = await getWalletAddressInfo(client, receiverWallet);
+
+  const incomingPayment = await createIncomingPayment(client, amountMoney, receiverWalletsDetails);
+  console.log('Incoming payment created:', incomingPayment);
+
+  const quote = await createQuote(client, incomingPayment.id, senderWalletsDetails);
+  const outgoingPaymentGrant = await getOutgoingPaymentAuthorization(client, senderWalletsDetails);
+
+  ws.send(JSON.stringify({ redirectUrl: outgoingPaymentGrant.interact.redirect }));
   
+  const completedPayment = await createOutgoingPayment(client, senderWalletsDetails, outgoingPaymentGrant, quote);
+  console.log('Outgoing payment completed:', completedPayment);
+  
+  ws.send(JSON.stringify({ status: 'Payment process completed successfully' }));
+}
 
-  socket.on('data', async (data) => {
-    const client = await getAuthenticatedClient();
-    
-    console.log(`Received from client: ${data.toString()}`);
-    const args = data.toString().split(' ');
-    const sendWallet = args[0];
-    const receiverWallet = args[1];
-    const amountMoney = args[2];
+const server = http.createServer();
+const wss = new WebSocket.Server({ server });
 
-    const senderWalletsDetails = await getWalletAddressInfo(client, sendWallet);
-    const receiverWalletsDetails = await getWalletAddressInfo(client, receiverWallet);
-    if (!receiverWalletsDetails) {
-      throw new Error();
+wss.on('connection', (ws) => {
+  console.log('Client connected');
+
+  ws.on('message', async (message) => {
+    try {
+      const data = JSON.parse(message);
+      console.log('Received from client:', data);
+      await handlePaymentProcess(ws, data);
+    } catch (error) {
+      console.error('Error processing payment:', error);
+      ws.send(JSON.stringify({ error: error.message }));
     }
-
-    const incomingPayment = await createIncomingPayment(client, amountMoney, receiverWalletsDetails);
-    console.log(incomingPayment);
-    if (!senderWalletsDetails) {
-      throw new Error();
-    }
-
-    const myQuote = await createQuote(client, incomingPayment.id, senderWalletsDetails);
-    const outPayment = await getOutgoingPaymentAuthorization(client, senderWalletsDetails);
-
-    if (!isPendingGrant(outPayment)) {
-      throw new Error();
-    }
-
-    socket.write(`Server received: ${outPayment.interact.redirect}`);
-    const completePayment = await createOutgoingPayment(client, senderWalletsDetails, outPayment, myQuote);
   });
 
-  socket.on('end', () => {
+  ws.on('close', () => {
     console.log('Client disconnected');
   });
 });
 
-server.listen(33335, () => {
-  console.log('Server is listening on port 3003');
+server.listen(PORT, () => {
+  console.log(`WebSocket server is running on port ${PORT}`);
+});
+
+server.on('error', (err) => {
+  console.error('Server error:', err);
 });

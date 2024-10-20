@@ -115,40 +115,6 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
                 ],
               ),
             ),
-            SizedBox(height: 16),
-            InkWell(
-              onTap: () {
-                // Show emoji picker
-                showModalBottomSheet(
-                  context: context,
-                  builder: (BuildContext context) {
-                    return EmojiPicker(
-                      onEmojiSelected: (category, emoji) {
-                        setState(() {
-                          _selectedEmoji = emoji.emoji;
-                        });
-                        Navigator.pop(context);
-                      },
-                    );
-                  },
-                );
-              },
-              child: Container(
-                padding: EdgeInsets.symmetric(vertical: 8),
-                decoration: BoxDecoration(
-                  border: Border(bottom: BorderSide(color: Colors.grey)),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('Pick an emoji',
-                        style: TextStyle(color: Colors.white)),
-                    Text(_selectedEmoji,
-                        style: TextStyle(fontSize: 24, color: Colors.white)),
-                  ],
-                ),
-              ),
-            ),
             SizedBox(height: 24),
             SizedBox(
               width: double.infinity,

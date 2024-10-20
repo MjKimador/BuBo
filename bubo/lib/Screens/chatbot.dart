@@ -24,7 +24,7 @@ class _ChatBotScreenState extends State<ChatBotScreen> {
 
   void connectWebSocket() {
     channel = WebSocketChannel.connect(
-      Uri.parse('ws://localhost:8020/ws/chat'),
+      Uri.parse('ws://localhost:65433/ws/chat'),
     );
 
     channel.stream.listen((message) {
