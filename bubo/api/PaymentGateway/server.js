@@ -1,4 +1,3 @@
-
 const { AuthenticatedClient, createAuthenticatedClient, isFinalizedGrant, isPendingGrant } = require('@interledger/open-payments');
 const { randomUUID } = require('crypto');
 const net = require('net');
@@ -222,6 +221,6 @@ const server = net.createServer((socket) => {
   });
 });
 
-server.listen(3003, () => {
+server.listen(33335, () => {
   console.log('Server is listening on port 3003');
 });

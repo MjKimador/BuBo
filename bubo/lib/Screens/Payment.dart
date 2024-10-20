@@ -1,8 +1,7 @@
-import 'dart:convert';
-
-import 'package:bubo/Screens/budget_model.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import 'package:socket_io_client/socket_io_client.dart' as IO;
+import 'package:bubo/Screens/budget_model.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class PaymentMethodsPage extends StatefulWidget {
   Budget budget;
@@ -20,9 +19,135 @@ class _PaymentMethodsPageState extends State<PaymentMethodsPage> {
   String affiliationNumber = '';
   String amountToPay = '';
   String paymentType = 'Card'; // Default payment type
+  String sender = "b40ce34e-5db6-487a-abdd-d1a93e9f9457";
 
-  void _handlePayment() async {
-    //this will call openpayment apis
+  static const String SERVER_URL = 'http://192.168.56.1:33335';
+
+  late IO.Socket socket;
+
+  @override
+  void initState() {
+    super.initState();
+    _connectSocket();
+  }
+
+  void _connectSocket() {
+    socket = IO.io(SERVER_URL, <String, dynamic>{
+      'transports': ['websocket'],
+      'autoConnect': false,
+    });
+
+    socket.onConnect((_) {
+      print('Connection established');
+    });
+
+    socket.onDisconnect((_) {
+      print('Connection disconnected');
+    });
+
+    socket.onConnectError((err) {
+      print('Connect error: $err');
+      _showErrorDialog('Failed to connect to server: $err');
+    });
+
+    socket.onError((err) {
+      print('Error: $err');
+      _showErrorDialog('An error occurred: $err');
+    });
+
+    socket.connect();
+  }
+
+  Future<void> _handlePayment() async {
+    if (!socket.connected) {
+      _showErrorDialog('Not connected to server');
+      return;
+    }
+
+    // Prepare data to send
+    final dataToSend = {
+      'senderWallet': sender,
+      'receiverWallet': email,
+      'amount': amountToPay,
+    };
+
+    socket.emit('initiate-payment', dataToSend);
+    print('Sent to server: $dataToSend');
+
+    socket.once('payment-response', (data) {
+      print('Received from server: $data');
+      _showResponseDialog(data.toString());
+    });
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Error'),
+          content: Text(message),
+          actions: <Widget>[
+            TextButton(
+              child: Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showResponseDialog(String response) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Server Response'),
+          content: Text(response),
+          actions: <Widget>[
+            TextButton(
+              child: Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showRedirectPopup(String redirectUrl) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Payment Authorization'),
+          content: Text('Click the link below to authorize the payment:'),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Open Link'),
+              onPressed: () async {
+                if (await canLaunch(redirectUrl)) {
+                  await launch(redirectUrl);
+                } else {
+                  throw 'Could not launch $redirectUrl';
+                }
+              },
+            ),
+            TextButton(
+              child: Text('Close'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -53,140 +178,27 @@ class _PaymentMethodsPageState extends State<PaymentMethodsPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Email Address
-                Text(
-                  'Email Address',
-                  style: TextStyle(color: Colors.white),
-                ),
-                Container(
-                  margin: EdgeInsets.only(top: 8.0, bottom: 16.0),
-                  padding: EdgeInsets.all(8.0),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[850],
-                    borderRadius: BorderRadius.circular(10.0),
-                  ),
-                  child: TextField(
-                    decoration: InputDecoration(
-                      hintText: 'Enter Email',
-                      hintStyle: TextStyle(color: Colors.white54),
-                      border: InputBorder.none,
-                    ),
-                    style: TextStyle(color: Colors.white),
-                    onChanged: (value) {
-                      setState(() {
-                        email = value;
-                      });
-                    },
-                  ),
-                ),
+                _buildInputField(
+                    'Wallet Address', 'Enter Email', (value) => email = value),
 
                 // Customer Name
-                Text(
-                  'Customer Name',
-                  style: TextStyle(color: Colors.white),
-                ),
-                Container(
-                  margin: EdgeInsets.only(top: 8.0, bottom: 16.0),
-                  padding: EdgeInsets.all(8.0),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[850],
-                    borderRadius: BorderRadius.circular(10.0),
-                  ),
-                  child: TextField(
-                    decoration: InputDecoration(
-                      hintText: 'Enter Name',
-                      hintStyle: TextStyle(color: Colors.white54),
-                      border: InputBorder.none,
-                    ),
-                    style: TextStyle(color: Colors.white),
-                    onChanged: (value) {
-                      setState(() {
-                        name = value;
-                      });
-                    },
-                  ),
-                ),
+                _buildInputField(
+                    'Customer Name', 'Enter Name', (value) => name = value),
 
                 // Affiliation Number
-                Text(
-                  'Affiliation Number',
-                  style: TextStyle(color: Colors.white),
-                ),
-                Container(
-                  margin: EdgeInsets.only(top: 8.0, bottom: 16.0),
-                  padding: EdgeInsets.all(8.0),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[850],
-                    borderRadius: BorderRadius.circular(10.0),
-                  ),
-                  child: TextField(
-                    decoration: InputDecoration(
-                      hintText: 'Enter Affiliation Number',
-                      hintStyle: TextStyle(color: Colors.white54),
-                      border: InputBorder.none,
-                    ),
-                    style: TextStyle(color: Colors.white),
-                    onChanged: (value) {
-                      setState(() {
-                        affiliationNumber = value;
-                      });
-                    },
-                  ),
-                ),
+                _buildInputField(
+                    'Affiliation Number',
+                    'Enter Affiliation Number',
+                    (value) => affiliationNumber = value),
 
                 // Amount to Pay
-                Text(
-                  'Amount to Pay',
-                  style: TextStyle(color: Colors.white),
-                ),
-                Container(
-                  margin: EdgeInsets.only(top: 8.0, bottom: 16.0),
-                  padding: EdgeInsets.all(8.0),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[850],
-                    borderRadius: BorderRadius.circular(10.0),
-                  ),
-                  child: TextField(
-                    decoration: InputDecoration(
-                      hintText: 'Enter Amount',
-                      hintStyle: TextStyle(color: Colors.white54),
-                      border: InputBorder.none,
-                    ),
-                    style: TextStyle(color: Colors.white),
-                    keyboardType: TextInputType.number,
-                    onChanged: (value) {
-                      setState(() {
-                        amountToPay = value;
-                      });
-                    },
-                  ),
-                ),
+                _buildInputField('Amount to Pay', 'Enter Amount',
+                    (value) => amountToPay = value, TextInputType.number),
 
                 // Payment Type
-                Text(
-                  'Payment Type',
-                  style: TextStyle(color: Colors.white),
-                ),
-                DropdownButton<String>(
-                  value: paymentType,
-                  dropdownColor: Colors.grey[850],
-                  icon: Icon(Icons.arrow_drop_down, color: Colors.white),
-                  isExpanded: true,
-                  style: TextStyle(color: Colors.white),
-                  onChanged: (String? newValue) {
-                    setState(() {
-                      paymentType = newValue!;
-                    });
-                  },
-                  items: <String>['Card', 'Google Pay', 'Bank']
-                      .map<DropdownMenuItem<String>>((String value) {
-                    return DropdownMenuItem<String>(
-                      value: value,
-                      child: Text(value),
-                    );
-                  }).toList(),
-                ),
+                _buildDropdownField(),
 
-                SizedBox(height: 16.0), // Add spacing before the buttons
+                SizedBox(height: 16.0),
 
                 // Buttons: Cancel and Pay
                 Row(
@@ -194,8 +206,7 @@ class _PaymentMethodsPageState extends State<PaymentMethodsPage> {
                     Expanded(
                       child: ElevatedButton(
                         onPressed: () {
-                          Navigator.pop(
-                              context); // Navigate back to the home page
+                          Navigator.pop(context);
                         },
                         child: Text('Cancel'),
                         style: ElevatedButton.styleFrom(
@@ -220,6 +231,68 @@ class _PaymentMethodsPageState extends State<PaymentMethodsPage> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildInputField(String label, String hint, Function(String) onChanged,
+      [TextInputType keyboardType = TextInputType.text]) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(color: Colors.white),
+        ),
+        Container(
+          margin: EdgeInsets.only(top: 8.0, bottom: 16.0),
+          padding: EdgeInsets.all(8.0),
+          decoration: BoxDecoration(
+            color: Colors.grey[850],
+            borderRadius: BorderRadius.circular(10.0),
+          ),
+          child: TextField(
+            decoration: InputDecoration(
+              hintText: hint,
+              hintStyle: TextStyle(color: Colors.white54),
+              border: InputBorder.none,
+            ),
+            style: TextStyle(color: Colors.white),
+            keyboardType: keyboardType,
+            onChanged: onChanged,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDropdownField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Payment Type',
+          style: TextStyle(color: Colors.white),
+        ),
+        DropdownButton<String>(
+          value: paymentType,
+          dropdownColor: Colors.grey[850],
+          icon: Icon(Icons.arrow_drop_down, color: Colors.white),
+          isExpanded: true,
+          style: TextStyle(color: Colors.white),
+          onChanged: (String? newValue) {
+            setState(() {
+              paymentType = newValue!;
+            });
+          },
+          items: <String>['Card', 'Google Pay', 'Bank']
+              .map<DropdownMenuItem<String>>((String value) {
+            return DropdownMenuItem<String>(
+              value: value,
+              child: Text(value),
+            );
+          }).toList(),
+        ),
+      ],
     );
   }
 }
